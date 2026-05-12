@@ -34,8 +34,8 @@ class _AttendanceBoardView extends StatelessWidget {
       body: Stack(
         children: [
           Positioned(
-            top: safeTop + 8,
-            left: 18,
+            top: safeTop + 10,
+            left: 10,
             child: IconButton(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.chevron_left_rounded, size: 32),
@@ -50,7 +50,7 @@ class _AttendanceBoardView extends StatelessWidget {
                   child: Stack(
                     children: [
                       Positioned(
-                        top: 14,
+                        top: 18,
                         left: 0,
                         right: 0,
                         child: Center(
@@ -66,14 +66,14 @@ class _AttendanceBoardView extends StatelessWidget {
                       Positioned(
                         left: 0,
                         right: 0,
-                        top: 230,
-                        bottom: 0,
+                        top: 280,
+                        bottom: safeBottom + 78,
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(14, 18, 14, 18),
+                          padding: const EdgeInsets.fromLTRB(12, 18, 12, 18),
                           decoration: BoxDecoration(
                             color: const Color(0xFFD9E9FF),
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                           child: AttendanceBoardLayout(viewModel: viewModel),
                         ),
@@ -82,12 +82,12 @@ class _AttendanceBoardView extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  left: 28,
-                  right: 28,
-                  bottom: safeBottom + 2,
+                  left: 18,
+                  right: 18,
+                  bottom: safeBottom + 18,
                   child: SizedBox(
                     width: double.infinity,
-                    height: 58,
+                    height: 56,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.popUntil(context, (route) => route.isFirst);
@@ -96,7 +96,7 @@ class _AttendanceBoardView extends StatelessWidget {
                         backgroundColor: const Color(0xFF6EA8EB),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 0,
                       ),
@@ -124,15 +124,15 @@ class _AttendanceBoardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 36,
-      left: 20,
-      right: 20,
+      top: 84,
+      left: 16,
+      right: 14,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 52),
+              padding: const EdgeInsets.only(top: 26),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -140,10 +140,10 @@ class _AttendanceBoardHeader extends StatelessWidget {
                     viewModel.boardItemSummary,
                     style: AppFontStyle.F3.copyWith(
                       color: Colors.black,
-                      height: 1.35,
+                      height: 1.45,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     viewModel.boardSubSummary,
                     style: AppFontStyle.H6.copyWith(
@@ -156,8 +156,8 @@ class _AttendanceBoardHeader extends StatelessWidget {
           ),
           Image.asset(
             ImagePath.attendanceItemTrashBundle,
-            width: 156,
-            height: 156,
+            width: 144,
+            height: 144,
             fit: BoxFit.contain,
           ),
         ],

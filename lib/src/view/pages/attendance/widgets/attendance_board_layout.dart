@@ -7,114 +7,81 @@ class AttendanceBoardLayout extends StatelessWidget {
   const AttendanceBoardLayout({super.key, required this.viewModel});
 
   final AttendanceViewModel viewModel;
+  static const _boardAspectRatio = 1192 / 1292;
+  static const _starPoints = <_BoardPoint>[
+    _BoardPoint(day: 1, x: 0.14, y: 0.17),
+    _BoardPoint(day: 2, x: 0.49, y: 0.14),
+    _BoardPoint(day: 3, x: 0.84, y: 0.30),
+    _BoardPoint(day: 4, x: 0.49, y: 0.48),
+    _BoardPoint(day: 5, x: 0.10, y: 0.64),
+    _BoardPoint(day: 6, x: 0.37, y: 0.79),
+    _BoardPoint(day: 7, x: 0.81, y: 0.78),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const starWidth = 150.0;
-        const iconSize = 75.0;
-
         final labelStyle = AppFontStyle.H6.copyWith(
           color: const Color(0xFF6EA8EB),
         );
 
         final boardWidth = constraints.maxWidth;
         final boardHeight = constraints.maxHeight;
-
-        // Path image keeps its own horizontal inset.
-        const pathHorizontalInset = 18.0;
-        const basePathBottom = 150.0;
-        const pathBottom = 150.0;
-        final pathWidth = boardWidth - (pathHorizontalInset * 2);
-        final verticalShift = basePathBottom - pathBottom;
-
-        double syncedLeft(double ratio, {double offset = -30}) {
-          return pathWidth * ratio + offset;
-        }
-
-        double syncedTop(double ratio, {double offset = -30}) {
-          return boardHeight * ratio + verticalShift + offset;
-        }
+        final pathWidth = boardWidth - 18;
+        final imageHeight = pathWidth / _boardAspectRatio;
+        final availableHeight = boardHeight - 18;
+        final pathHeight = imageHeight > availableHeight
+            ? availableHeight
+            : imageHeight;
+        final actualPathWidth = pathHeight * _boardAspectRatio;
+        final leftInset = (boardWidth - actualPathWidth) / 2;
+        final topInset = boardHeight - pathHeight - 2;
+        final starWidth = actualPathWidth * 0.285;
+        final iconSize = starWidth * 0.47;
+        final labelTopGap = starWidth * 0.70;
 
         return Stack(
           children: [
             Positioned(
-              left: pathHorizontalInset,
-              right: pathHorizontalInset,
-              bottom: pathBottom,
-              child: Image.asset(ImagePath.attendanceBoardPath),
+              left: leftInset,
+              top: topInset,
+              width: actualPathWidth,
+              height: pathHeight,
+              child: Image.asset(
+                ImagePath.attendanceBoardPath,
+                fit: BoxFit.contain,
+              ),
             ),
-
-            _BoardTile(
-              left: syncedLeft(0.05),
-              top: syncedTop(0.03),
-              day: 1,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(1),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.51),
-              top: syncedTop(0.00),
-              day: 2,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(2),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.85),
-              top: syncedTop(0.18),
-              day: 3,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(3),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.43),
-              top: syncedTop(0.27),
-              day: 4,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(4),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.00),
-              top: syncedTop(0.38),
-              day: 5,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(5),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.24),
-              top: syncedTop(0.59),
-              day: 6,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(6),
-              labelStyle: labelStyle,
-            ),
-            _BoardTile(
-              left: syncedLeft(0.67),
-              top: syncedTop(0.58),
-              day: 7,
-              starWidth: starWidth,
-              iconSize: iconSize,
-              imagePath: viewModel.boardItemPathForDay(7),
-              highlighted: viewModel.checkedDays >= 7,
-              labelStyle: labelStyle,
-            ),
+            for (final point in _starPoints)
+              _BoardTile(
+                left: leftInset + (actualPathWidth * point.x) - (starWidth / 2),
+                top: topInset + (pathHeight * point.y) - (starWidth / 2),
+                day: point.day,
+                starWidth: starWidth,
+                iconSize: iconSize,
+                labelTopGap: labelTopGap,
+                imagePath: viewModel.boardItemPathForDay(point.day),
+                highlighted: point.day == 7 && viewModel.checkedDays >= 7,
+                labelStyle: labelStyle,
+              ),
           ],
         );
       },
     );
   }
+}
+
+class _BoardPoint {
+  const _BoardPoint({
+    required this.day,
+    required this.x,
+    required this.y,
+  });
+
+  final int day;
+  final double x;
+  final double y;
 }
 
 class _BoardTile extends StatelessWidget {
@@ -126,6 +93,7 @@ class _BoardTile extends StatelessWidget {
     required this.iconSize,
     required this.imagePath,
     required this.labelStyle,
+    required this.labelTopGap,
     this.highlighted = false,
   });
 
@@ -136,6 +104,7 @@ class _BoardTile extends StatelessWidget {
   final double iconSize;
   final String imagePath;
   final TextStyle labelStyle;
+  final double labelTopGap;
   final bool highlighted;
 
   @override
@@ -143,34 +112,37 @@ class _BoardTile extends StatelessWidget {
     return Positioned(
       left: left,
       top: top,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: highlighted
-                ? BoxDecoration(
-                    boxShadow: const [
+      child: SizedBox(
+        width: starWidth,
+        height: starWidth + labelTopGap,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (highlighted)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x66FFF5A6),
-                        blurRadius: 24,
-                        spreadRadius: 8,
+                        color: const Color(0x66FFF5A6),
+                        blurRadius: starWidth * 0.20,
+                        spreadRadius: starWidth * 0.05,
                       ),
                     ],
-                  )
-                : null,
-            child: SizedBox(
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 0,
+              top: 0,
               width: starWidth,
               height: starWidth,
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Center(
-                      child: Image.asset(
-                        ImagePath.attendanceBoardStar,
-                        width: starWidth,
-                        height: starWidth,
-                        fit: BoxFit.contain,
-                      ),
+                    child: Image.asset(
+                      ImagePath.attendanceBoardStar,
+                      fit: BoxFit.contain,
                     ),
                   ),
                   Positioned.fill(
@@ -186,12 +158,18 @@ class _BoardTile extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          Transform.translate(
-            offset: const Offset(0, -20),
-            child: Text('$day일차', style: labelStyle),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              top: labelTopGap,
+              child: Text(
+                '$day일차',
+                style: labelStyle,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
