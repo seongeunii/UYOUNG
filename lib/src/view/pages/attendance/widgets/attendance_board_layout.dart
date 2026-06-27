@@ -102,7 +102,7 @@ class _BoardTile extends StatelessWidget {
   final int day;
   final double starWidth;
   final double iconSize;
-  final String imagePath;
+  final String? imagePath;
   final TextStyle labelStyle;
   final double labelTopGap;
   final bool highlighted;
@@ -147,13 +147,15 @@ class _BoardTile extends StatelessWidget {
                   ),
                   Positioned.fill(
                     child: Center(
-                      child: Image.asset(
-                        imagePath,
-                        width: iconSize,
-                        height: iconSize,
-                        fit: BoxFit.contain,
+                      child: imagePath == null
+                          ? null
+                          : Image.asset(
+                              imagePath!,
+                              width: iconSize,
+                              height: iconSize,
+                              fit: BoxFit.contain,
+                            ),
                       ),
-                    ),
                   ),
                 ],
               ),

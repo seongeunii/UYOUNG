@@ -26,22 +26,12 @@ class _AttendanceBoardView extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<AttendanceViewModel>();
     final mediaQuery = MediaQuery.of(context);
-    final safeTop = mediaQuery.padding.top;
     final safeBottom = mediaQuery.padding.bottom;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          Positioned(
-            top: safeTop + 10,
-            left: 10,
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.chevron_left_rounded, size: 32),
-              color: Colors.black,
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: Stack(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:uyoung/data/font_style.dart';
-import 'package:uyoung/data/image_data.dart';
 import 'package:uyoung/src/viewModel/attendance/attendance_view_model.dart';
 
 class AttendanceDayRow extends StatelessWidget {
@@ -31,16 +30,10 @@ class AttendanceDayRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(7, (index) {
           final day = index + 1;
-          final isReceived = day <= viewModel.checkedDays;
+          final isReceived = viewModel.isCheckedOnDay(day);
           final isToday = day == viewModel.currentDay;
-          final isFuture =
-              day >
-              (viewModel.hasCheckedToday
-                  ? viewModel.checkedDays
-                  : viewModel.currentDay);
-          final imagePath = isReceived
-              ? viewModel.entryBoardItemPath(day)
-              : ImagePath.attendanceItemQuestion;
+          final isFuture = day > viewModel.currentDay;
+          final imagePath = isReceived ? viewModel.entryBoardItemPath(day) : null;
 
           return Padding(
             padding: EdgeInsets.only(right: index == 6 ? 0 : boxSpacing),
@@ -73,11 +66,17 @@ class AttendanceDayRow extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        imagePath,
+                      SizedBox(
                         width: iconSize,
                         height: iconSize,
-                        fit: BoxFit.contain,
+                        child: imagePath == null
+                            ? null
+                            : Image.asset(
+                                imagePath,
+                                width: iconSize,
+                                height: iconSize,
+                                fit: BoxFit.contain,
+                              ),
                       ),
                       SizedBox(height: boxHeight < 62 ? 2 : 4),
                       FittedBox(

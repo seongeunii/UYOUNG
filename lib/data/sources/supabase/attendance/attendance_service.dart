@@ -31,9 +31,10 @@ class AttendanceService {
   Future<List<AttendanceLogEntry>> fetchAttendanceLogs() async {
     final response = await _client
         .from('attendance_logs')
-        .select('reward_item')
+        .select('check_in_date, reward_item')
         .eq('user_id', _currentUser.id)
-        .limit(7);
+        .order('check_in_date', ascending: true)
+        .limit(90);
 
     final rows = List<Map<String, dynamic>>.from(response);
     return rows.map(AttendanceLogEntry.fromMap).toList();

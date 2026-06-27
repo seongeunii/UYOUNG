@@ -16,6 +16,8 @@ class AttendanceViewModel extends ChangeNotifier {
   int _pearlCount = 0;
   List<AttendanceLogEntry> _logs = const [];
   bool _hasCheckedToday = false;
+  DateTime? _boardStartDate;
+  Map<int, AttendanceLogEntry> _weeklyLogByDay = const {};
 
   AttendanceResult? get result => _result;
   AttendanceFlowStep get step => _step;
@@ -24,16 +26,18 @@ class AttendanceViewModel extends ChangeNotifier {
   int get pearlCount => _pearlCount;
   List<AttendanceLogEntry> get logs => List.unmodifiable(_logs);
   bool get hasCheckedToday => _hasCheckedToday;
+  DateTime get boardStartDate => _boardStartDate ?? _todayKst();
+  Map<int, AttendanceLogEntry> get weeklyLogByDay =>
+      Map.unmodifiable(_weeklyLogByDay);
 
   bool get hasResult => _result != null;
   bool get isAlreadyChecked => _result?.isAlreadyChecked == true;
-  int get streak => _result?.streak ?? _logs.length;
-  int get checkedDays => _logs.length.clamp(0, 7);
+  int get streak => _result?.streak ?? checkedDays;
+  int get checkedDays => _weeklyLogByDay.length.clamp(0, 7);
   int get currentDay {
-    if (_hasCheckedToday && checkedDays > 0) {
-      return checkedDays.clamp(1, 7);
-    }
-    return (checkedDays + 1).clamp(1, 7);
+    final dayIndex =
+        _todayKst().difference(boardStartDate).inDays + 1;
+    return dayIndex.clamp(1, 7);
   }
   bool get isRevealStep => _step == AttendanceFlowStep.reveal;
 
@@ -88,6 +92,8 @@ class AttendanceViewModel extends ChangeNotifier {
 
   String get revealTitleBottom => '해달이 무언갈 주웠나봐요,';
 
+  bool isCheckedOnDay(int day) => _weeklyLogByDay.containsKey(day);
+
   Future<AttendanceFlowStep> checkIn() async {
     if (isLoading) {
       return _step;
@@ -104,7 +110,7 @@ class AttendanceViewModel extends ChangeNotifier {
       if (result.isSuccess || result.isAlreadyChecked) {
         _pearlCount = await _repository.fetchPearlCount();
         _logs = await _repository.fetchAttendanceLogs();
-        _hasCheckedToday = true;
+        _syncWeeklyBoardState();
       }
 
       if (result.isSuccess) {
@@ -128,7 +134,7 @@ class AttendanceViewModel extends ChangeNotifier {
     try {
       _logs = await _repository.fetchAttendanceLogs();
       _pearlCount = await _repository.fetchPearlCount();
-      _hasCheckedToday = _logs.isNotEmpty;
+      _syncWeeklyBoardState();
       notifyListeners();
     } catch (_) {
       // Entry/board UI should stay usable even if board history fails to load.
@@ -145,27 +151,17 @@ class AttendanceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String entryBoardItemPath(int day) {
-    if (day <= checkedDays) {
-      return boardItemPathForDay(day);
-    }
-    return ImagePath.attendanceItemQuestion;
+  String? entryBoardItemPath(int day) {
+    return boardItemPathForDay(day);
   }
 
-  String boardItemPathForDay(int day) {
-    if (day > checkedDays) {
-      return ImagePath.attendanceItemQuestion;
+  String? boardItemPathForDay(int day) {
+    final log = _weeklyLogByDay[day];
+    if (log == null) {
+      return null;
     }
 
-    final index = day - 1;
-    if (index < 0 || index >= _logs.length) {
-      return ImagePath.attendanceItemQuestion;
-    }
-
-    return _mapRewardItemToPath(
-      rewardItem: _logs[index].rewardItem,
-      day: day,
-    );
+    return _mapRewardItemToPath(rewardItem: log.rewardItem, day: day);
   }
 
   String _mapRewardItemToPath({
@@ -190,4 +186,59 @@ class AttendanceViewModel extends ChangeNotifier {
     }
     return ImagePath.attendanceItemQuestion;
   }
+
+  void _syncWeeklyBoardState() {
+    final today = _todayKst();
+    final sortedLogs = [..._logs]
+      ..sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
+
+    final cycles = <_AttendanceWeekCycle>[];
+
+    for (final log in sortedLogs) {
+      final logDate = _toKstDate(log.checkInDate);
+
+      if (cycles.isEmpty ||
+          !logDate.isBefore(cycles.last.startDate.add(const Duration(days: 7)))) {
+        cycles.add(_AttendanceWeekCycle(startDate: logDate, logs: [log]));
+        continue;
+      }
+
+      cycles.last.logs.add(log);
+    }
+
+    _AttendanceWeekCycle? activeCycle;
+    for (final cycle in cycles.reversed) {
+      final cycleEnd = cycle.startDate.add(const Duration(days: 7));
+      if (!today.isBefore(cycle.startDate) && today.isBefore(cycleEnd)) {
+        activeCycle = cycle;
+        break;
+      }
+    }
+
+    _boardStartDate = activeCycle?.startDate ?? today;
+    _weeklyLogByDay = {
+      for (final log in activeCycle?.logs ?? const <AttendanceLogEntry>[])
+        (_toKstDate(log.checkInDate).difference(_boardStartDate!).inDays + 1): log,
+    };
+    _hasCheckedToday = _weeklyLogByDay.containsKey(currentDay);
+  }
+
+  DateTime _todayKst() => _toKstDate(DateTime.now().toUtc().add(const Duration(hours: 9)));
+
+  DateTime _toKstDate(DateTime dateTime) {
+    final kst = dateTime.isUtc
+        ? dateTime.add(const Duration(hours: 9))
+        : dateTime.toUtc().add(const Duration(hours: 9));
+    return DateTime(kst.year, kst.month, kst.day);
+  }
+}
+
+class _AttendanceWeekCycle {
+  _AttendanceWeekCycle({
+    required this.startDate,
+    required this.logs,
+  });
+
+  final DateTime startDate;
+  final List<AttendanceLogEntry> logs;
 }
